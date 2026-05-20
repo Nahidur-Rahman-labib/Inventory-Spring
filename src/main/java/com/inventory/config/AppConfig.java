@@ -1,31 +1,45 @@
 package com.inventory.config;
 
-import org.hibernate.SessionFactory;
+import jakarta.persistence.EntityManagerFactory;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.orm.hibernate5.HibernateTransactionManager;
-import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
+
+import org.springframework.orm.jpa.JpaTransactionManager;
+
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import javax.sql.DataSource;
+
 import java.util.Properties;
 
 @Configuration
 @EnableWebMvc
 @EnableTransactionManagement
+@EnableScheduling
 @ComponentScan(basePackages = "com.inventory")
 public class AppConfig {
 
+    // DATABASE
     @Bean
     public DataSource dataSource() {
 
         DriverManagerDataSource ds =
                 new DriverManagerDataSource();
 
-        ds.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        ds.setDriverClassName(
+                "com.mysql.cj.jdbc.Driver"
+        );
 
         ds.setUrl(
                 "jdbc:mysql://localhost:3306/inventory_spring_db"
@@ -38,16 +52,21 @@ public class AppConfig {
         return ds;
     }
 
+    // ENTITY MANAGER FACTORY
     @Bean
-    public LocalSessionFactoryBean sessionFactory() {
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
 
-        LocalSessionFactoryBean factory =
-                new LocalSessionFactoryBean();
+        LocalContainerEntityManagerFactoryBean emf =
+                new LocalContainerEntityManagerFactoryBean();
 
-        factory.setDataSource(dataSource());
+        emf.setDataSource(dataSource());
 
-        factory.setPackagesToScan(
+        emf.setPackagesToScan(
                 "com.inventory.entity"
+        );
+
+        emf.setJpaVendorAdapter(
+                new HibernateJpaVendorAdapter()
         );
 
         Properties props = new Properties();
@@ -67,17 +86,17 @@ public class AppConfig {
                 "update"
         );
 
-        factory.setHibernateProperties(props);
+        emf.setJpaProperties(props);
 
-        return factory;
+        return emf;
     }
 
+    // TRANSACTION MANAGER
     @Bean
-    public HibernateTransactionManager transactionManager(
-            SessionFactory sessionFactory) {
+    public JpaTransactionManager transactionManager( //Controls commit/rollback behavior.
+            EntityManagerFactory emf
+    ) {
 
-        return new HibernateTransactionManager(
-                sessionFactory
-        );
+        return new JpaTransactionManager(emf);
     }
 }
